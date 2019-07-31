@@ -11,5 +11,5 @@ RUN apt-get install tesseract-ocr -y \
 RUN apt-get clean && apt-get autoremove
 RUN pip3 install pytesseract django pdf2image
 RUN git clone https://github.com/AbhishekAshokDubey/base_django_docker_app.git
-ORKDIR "/base_django_docker_app"
+WORKDIR "/base_django_docker_app"
 CMD ["python3", "pull_script/pull_pdfs_ocr.py"]
