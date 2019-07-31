@@ -1,0 +1,27 @@
+FROM ubuntu:18.04
+#MAINTAINER adubey4@slb.com 
+
+RUN apt-get update && apt-get install curl gnupg2 -y
+RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] http://packages.cloud.google.com/apt cloud-sdk main" | tee -a /etc/apt/sources.list.d/google-cloud-sdk.list && curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key --keyring /usr/share/keyrings/cloud.google.gpg  add - && apt-get update -y && apt-get install google-cloud-sdk -y
+
+RUN apt-get install tesseract-ocr -y \
+	curl \
+    python3 \
+	poppler-utils \
+	python-poppler \
+    #python-setuptools \
+    python3-pip \
+	git
+
+RUN apt-get clean \
+    && apt-get autoremove
+
+RUN pip3 install pytesseract django pdf2image
+#RUN curl -sSL https://sdk.cloud.google.com | bash
+RUN gsutil cp gs://abhishek-test/sample.pdf .
+CMD ls
+RUN git clone https://github.com/AbhishekAshokDubey/base_django_docker_app.git
+WORKDIR "/base_django_docker_app"
+CMD ["python3", "manage.py", "runserver", "0.0.0.0:8000"]
+
+#docker run -it -p 8000:8000 adubey4/ocr
