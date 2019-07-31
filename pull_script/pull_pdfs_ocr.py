@@ -14,12 +14,14 @@ from pdf2image import convert_from_path
 import subprocess
 import time
 
+
+cur_file_apth = os.path.dirname(os.path.abspath(__file__))
+base_data_folder = cur_file_apth.replace("pull_script","data")
+
 if platform == "linux" or platform == "linux2":
-    base_data_folder = "/base_django_docker_app/data"
     shell_cmd = False
 elif platform == "win32":
     pytesseract.pytesseract.tesseract_cmd = 'C:/Program Files (x86)/Tesseract-OCR/tesseract'
-    base_data_folder = r"C:\Users\Adubey4\Desktop\test\base_django_docker_app\data"
     shell_cmd = True
 
 
@@ -32,14 +34,17 @@ def upload_file_to_bucket(local_path, bucket_path):
     cmd = "gsutil cp "+ local_path +" \""+ bucket_path +"\""
 #    print(cmd)
     os.system(cmd)
-    try:
-        os.remove(local_path)
-        os.remove(local_path.replace(".txt",".pdf"))
-    except:
-        print("count not delete files")
+#    try:
+    os.remove(local_path)
+    os.remove(local_path.replace(".txt",".pdf"))
+#    except:
+#        print("count not delete files")
 
 def remove_from_bucket(file_path):
+#    try:
     os.system("gsutil rm "+file_path)
+#    except:
+#        print("Could not delete from bucket")
 
 def save_ocr_text(PDF_file_path_gcp):
     pdf_name = os.path.basename(PDF_file_path_gcp)
