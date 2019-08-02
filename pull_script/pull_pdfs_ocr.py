@@ -13,10 +13,12 @@ from sys import platform
 from pdf2image import convert_from_path 
 import subprocess
 import time
+import json
 
 
 cur_file_apth = os.path.dirname(os.path.abspath(__file__))
 base_data_folder = cur_file_apth.replace("pull_script","data")
+sub_topic = "crt-doc-upload-sub"
 
 if platform == "linux" or platform == "linux2":
     shell_cmd = False
@@ -66,16 +68,25 @@ def save_ocr_text(PDF_file_path_gcp):
 
 if __name__ == "__main__":
     while True:
-        result = subprocess.run(['gsutil', 'ls', "gs://abhishek-test/input/*.pdf"], stdout=subprocess.PIPE, shell=shell_cmd)
-        pdf_files = result.stdout.strip().decode("utf-8").replace("\r","").split("\n")
-        print(pdf_files)
-        for PDF_file_path_gcp in pdf_files:
-            print(PDF_file_path_gcp)
-#            try:
+        result_ = subprocess.run(['gcloud', 'pubsub', "subscriptions", "pull", "--auto-ack", sub_topic, "--format=json"], stdout=subprocess.PIPE, shell=shell_cmd)
+        msg = json.loads(result_.stdout.decode("utf-8"))
+        PDF_file_path_gcp = (msg[0]["message"]["attributes"]).get("key")
+        if PDF_file_path_gcp:
             copy_file_from_bucket(PDF_file_path_gcp)
             out_file_path = save_ocr_text(PDF_file_path_gcp)
             upload_file_to_bucket(out_file_path, PDF_file_path_gcp.replace("/input/","/output/").replace(".pdf",".txt"))
             remove_from_bucket(PDF_file_path_gcp)
-#            except:
-#                print("Broke for: "+PDF_file_path_gcp)
+
+#        result = subprocess.run(['gsutil', 'ls', "gs://abhishek-test/input/*.pdf"], stdout=subprocess.PIPE, shell=shell_cmd)
+#        pdf_files = result.stdout.strip().decode("utf-8").replace("\r","").split("\n")
+#        print(pdf_files)
+#        for PDF_file_path_gcp in pdf_files:
+#            print(PDF_file_path_gcp)
+##            try:
+#            copy_file_from_bucket(PDF_file_path_gcp)
+#            out_file_path = save_ocr_text(PDF_file_path_gcp)
+#            upload_file_to_bucket(out_file_path, PDF_file_path_gcp.replace("/input/","/output/").replace(".pdf",".txt"))
+#            remove_from_bucket(PDF_file_path_gcp)
+##            except:
+##                print("Broke for: "+PDF_file_path_gcp)
         time.sleep(10) # 2 second delay
