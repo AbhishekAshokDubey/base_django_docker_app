@@ -70,7 +70,7 @@ if __name__ == "__main__":
     while True:
         result_ = subprocess.run(['gcloud', 'pubsub', "subscriptions", "pull", "--auto-ack", sub_topic, "--format=json"], stdout=subprocess.PIPE, shell=shell_cmd)
         msg = json.loads(result_.stdout.decode("utf-8"))
-        PDF_file_path_gcp = (msg[0]["message"]["attributes"]).get("key")
+        PDF_file_path_gcp = (msg[0]["message"]["attributes"]).get("path")
         if PDF_file_path_gcp:
             copy_file_from_bucket(PDF_file_path_gcp)
             out_file_path = save_ocr_text(PDF_file_path_gcp)
