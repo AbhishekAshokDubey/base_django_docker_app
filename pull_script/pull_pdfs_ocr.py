@@ -70,12 +70,14 @@ if __name__ == "__main__":
     while True:
         result_ = subprocess.run(['gcloud', 'pubsub', "subscriptions", "pull", "--auto-ack", sub_topic, "--format=json"], stdout=subprocess.PIPE, shell=shell_cmd)
         msg = json.loads(result_.stdout.decode("utf-8"))
-        PDF_file_path_gcp = (msg[0]["message"]["attributes"]).get("path")
-        if PDF_file_path_gcp:
-            copy_file_from_bucket(PDF_file_path_gcp)
-            out_file_path = save_ocr_text(PDF_file_path_gcp)
-            upload_file_to_bucket(out_file_path, PDF_file_path_gcp.replace("/input/","/output/").replace(".pdf",".txt"))
-            remove_from_bucket(PDF_file_path_gcp)
+        if len(msg):
+            if (msg[0]["message"]["attributes"]).get("eventType") == 'OBJECT_FINALIZE':
+                PDF_file_path_gcp = "gs://" + (msg[0]["message"]["attributes"]).get("bucketId") + "/"+ (msg[0]["message"]["attributes"]).get("objectId")
+                if PDF_file_path_gcp:
+                    copy_file_from_bucket(PDF_file_path_gcp)
+                    out_file_path = save_ocr_text(PDF_file_path_gcp)
+                    upload_file_to_bucket(out_file_path, PDF_file_path_gcp.replace("/input/","/output/").replace(".pdf",".txt"))
+                    remove_from_bucket(PDF_file_path_gcp)
 
 #        result = subprocess.run(['gsutil', 'ls', "gs://abhishek-test/input/*.pdf"], stdout=subprocess.PIPE, shell=shell_cmd)
 #        pdf_files = result.stdout.strip().decode("utf-8").replace("\r","").split("\n")
