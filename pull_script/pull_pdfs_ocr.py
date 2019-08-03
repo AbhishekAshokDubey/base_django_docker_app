@@ -4,7 +4,7 @@ Created on Thu Aug  1 00:33:20 2019
 
 @author: ADubey4
 """
-
+import re
 import os
 import sys
 import pytesseract 
@@ -64,7 +64,8 @@ def save_ocr_text(PDF_file_path_gcp):
         except:
             text = "------- error page -------"
             os.system("gcloud logging write ocr-app 'Error at page "+str(i)+"' --severity=INFO")
-        text = text.replace('-\n', '')
+        #text = text.replace('-\n', '')
+        text = re.sub(r'[^\x00-\x7f]',r'', text.replace('-\n', ''))
         text_list.append(text)
         f.write(text)
     f.close()
