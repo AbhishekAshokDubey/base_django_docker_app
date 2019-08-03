@@ -72,16 +72,19 @@ if __name__ == "__main__":
         result_ = subprocess.run(['gcloud', 'pubsub', "subscriptions", "pull", "--auto-ack", sub_topic, "--format=json"], stdout=subprocess.PIPE, shell=shell_cmd)
         msg = json.loads(result_.stdout.decode("utf-8"))
         if len(msg):
-            os.system("gcloud logging write ocr-app 'test now' --severity=INFO")
+            os.system("gcloud logging write ocr-app '"+ (msg[0]["message"]["attributes"]).get("eventType", "issues ishues")+"' --severity=INFO")
             if (msg[0]["message"]["attributes"]).get("eventType") == 'OBJECT_FINALIZE':
                 PDF_file_path_gcp = "gs://" + (msg[0]["message"]["attributes"]).get("bucketId") + "/"+ (msg[0]["message"]["attributes"]).get("objectId")
-                os.system("gcloud logging write ocr-app '"+PDF_file_path_gcp +"' --severity=INFO")
+                os.system("gcloud logging write ocr-app 'path "+PDF_file_path_gcp +"' --severity=INFO")
                 if PDF_file_path_gcp:
                     copy_file_from_bucket(PDF_file_path_gcp)
+                    os.system("gcloud logging write ocr-app 'file copied from bucket' --severity=INFO")
                     out_file_path = save_ocr_text(PDF_file_path_gcp)
+                    os.system("gcloud logging write ocr-app 'converted to text' --severity=INFO")
                     upload_file_to_bucket(out_file_path, PDF_file_path_gcp.replace("/input/","/output/").replace(".pdf",".txt"))
+                    os.system("gcloud logging write ocr-app 'uploaded text to bucket' --severity=INFO")
                     remove_from_bucket(PDF_file_path_gcp)
-
+                    os.system("gcloud logging write ocr-app 'pdf file deleted from bucket' --severity=INFO")
 #        result = subprocess.run(['gsutil', 'ls', "gs://abhishek-test/input/*.pdf"], stdout=subprocess.PIPE, shell=shell_cmd)
 #        pdf_files = result.stdout.strip().decode("utf-8").replace("\r","").split("\n")
 #        print(pdf_files)
