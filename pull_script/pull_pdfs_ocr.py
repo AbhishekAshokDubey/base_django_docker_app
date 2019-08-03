@@ -67,13 +67,15 @@ def save_ocr_text(PDF_file_path_gcp):
 
 
 if __name__ == "__main__":
+    os.system("gcloud logging write ocr-app 'staring 1 GCE' --payload-type=json --severity=INFO")
     while True:
         result_ = subprocess.run(['gcloud', 'pubsub', "subscriptions", "pull", "--auto-ack", sub_topic, "--format=json"], stdout=subprocess.PIPE, shell=shell_cmd)
         msg = json.loads(result_.stdout.decode("utf-8"))
         if len(msg):
-            os.system("gcloud logging write ocr-app '"+result_.stdout.decode("utf-8")+"' --payload-type=json --severity=INFO")
+            os.system("gcloud logging write ocr-app 'test now' --payload-type=json --severity=INFO")
             if (msg[0]["message"]["attributes"]).get("eventType") == 'OBJECT_FINALIZE':
                 PDF_file_path_gcp = "gs://" + (msg[0]["message"]["attributes"]).get("bucketId") + "/"+ (msg[0]["message"]["attributes"]).get("objectId")
+                os.system("gcloud logging write ocr-app '"+PDF_file_path_gcp +"' --payload-type=json --severity=INFO")
                 if PDF_file_path_gcp:
                     copy_file_from_bucket(PDF_file_path_gcp)
                     out_file_path = save_ocr_text(PDF_file_path_gcp)
