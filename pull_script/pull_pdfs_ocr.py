@@ -68,11 +68,10 @@ def save_ocr_text(PDF_file_path_gcp):
 
 if __name__ == "__main__":
     while True:
-        print("Started Now..........")
         result_ = subprocess.run(['gcloud', 'pubsub', "subscriptions", "pull", "--auto-ack", sub_topic, "--format=json"], stdout=subprocess.PIPE, shell=shell_cmd)
         msg = json.loads(result_.stdout.decode("utf-8"))
-        print("Msg: "+str(msg))
         if len(msg):
+            os.system("gcloud logging write ocr-app '"+result_.stdout.decode("utf-8")+"' --payload-type=json --severity=INFO")
             if (msg[0]["message"]["attributes"]).get("eventType") == 'OBJECT_FINALIZE':
                 PDF_file_path_gcp = "gs://" + (msg[0]["message"]["attributes"]).get("bucketId") + "/"+ (msg[0]["message"]["attributes"]).get("objectId")
                 if PDF_file_path_gcp:
@@ -94,3 +93,4 @@ if __name__ == "__main__":
 ##            except:
 ##                print("Broke for: "+PDF_file_path_gcp)
         time.sleep(10) # 2 second delay
+        
