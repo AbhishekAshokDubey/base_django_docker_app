@@ -54,11 +54,13 @@ def save_ocr_text(PDF_file_path_gcp):
     #pdf_folder = os.path.dirname(PDF_file_path)
     pdf_folder = os.path.dirname(PDF_file_path)
     os.system("gcloud logging write ocr-app 'starting OCR for "+PDF_file_path+"' --severity=INFO")
-    pages = convert_from_path(PDF_file_path, 500)
+    pages = convert_from_path(PDF_file_path)
+    os.system("gcloud logging write ocr-app 'converted pdf to images' --severity=INFO")
     text_list = []
     out_file_path = os.path.join(pdf_folder, pdf_name.replace(".pdf",".txt"))
     f = open(out_file_path, "a")
     for i, page in enumerate(pages):
+        os.system("gcloud logging write ocr-app 'starting page "+str(i)+"' --severity=INFO")
         try:
             text = str(pytesseract.image_to_string(page))
         except:
