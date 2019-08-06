@@ -167,8 +167,8 @@ if __name__ == "__main__":
 
                     os.system("gcloud logging write ocr-app 'converted to text' --severity=INFO")
 
-                    upload_file_to_bucket(PDF_file_local_path.replace(".pdf", ".pdf.pdf"), PDF_file_path_gcp.replace("/input/","/output/").replace(".pdf",".txt"))
-                    upload_file_to_bucket(PDF_file_local_path.replace(".pdf", ".pdf.txt"), PDF_file_path_gcp.replace("/input/","/output/").replace(".pdf",".txt"))
+                    upload_file_to_bucket(PDF_file_local_path.replace(".pdf", ".pdf.pdf"), PDF_file_path_gcp.replace("/input/","/output/").replace(".pdf",".pdf.pdf"))
+                    upload_file_to_bucket(PDF_file_local_path.replace(".pdf", ".pdf.txt"), PDF_file_path_gcp.replace("/input/","/output/").replace(".pdf",".pdf.txt"))
 
                     os.system("gcloud logging write ocr-app 'uploaded text to bucket' --severity=INFO")
                     remove_from_bucket(PDF_file_path_gcp)
