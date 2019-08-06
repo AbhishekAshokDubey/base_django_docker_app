@@ -27,6 +27,77 @@ elif platform == "win32":
     shell_cmd = True
 
 
+import os
+from pdf2image import convert_from_path
+import glob
+import tempfile
+import subprocess
+import string
+import random
+
+def get_images(file_path, images_path, fp, lp, fmt = 'png'):
+    print('Saving Images for file {} in folder {}'.format(os.path.basename(file_path), images_path))
+    output_file = os.path.basename(file_path).replace('.pdf', '')
+    convert_from_path(file_path, dpi = 300, output_folder = images_path, output_file = output_file, first_page = fp, last_page = lp, fmt = 'png', thread_count= 4)    
+    return True
+
+def randomString(stringLength = 8):
+    letters = string.ascii_letters    
+    return ''.join(random.choice(letters) for i in range(stringLength))
+
+def parse_input(image_path):
+    if type(image_path) == type([]):
+        return 'f'
+    if os.path.splitext(image_path)[1] == '.txt':
+        return 't'
+    return 'd'
+
+def run_tesseract(image_path, out_file, fmt = ['txt'], image_format = 'png'):
+    input_type = parse_input(image_path)
+    if not input_type == 't':
+        if input_type == 'd':
+            if not image_format:
+                image_format = 'png'                
+            image_path = sorted(glob.glob(os.path.join(image_path, '*.{}'.format(image_format))))
+#        print('making temp text file')
+        tempfilename = randomString() + '.txt'
+        temp_dir = tempfile.gettempdir()
+        txtfile_path = os.path.join(temp_dir, tempfilename)
+        f = open(txtfile_path, 'w')
+        f.write('\n'.join(image_path))
+        f.close()
+        image_path = txtfile_path
+    
+    print('\n\n')
+    tesseract_formats = ' '.join(fmt)
+    cmd =  'tesseract "' + image_path + '" "' + out_file + '" ' + tesseract_formats
+    print('Tesseract Command is: ',cmd, '\n\n')
+    out_status = subprocess.call(cmd, shell = True)
+    print('\n\n%%%%%%%%%%%%%%%%%%%%%%%%%%%out%%%%%%%%%%%%%%%%%%%%%%%', out_status)
+    print('OCR Done')
+    
+    if not input_type == 't':
+        os.remove(image_path)
+    return out_status
+
+
+def OCR_func(filepath, outpath, fp = None, lp = None, fmt = ['txt', 'pdf', 'tsv']):
+    img_fmt = 'png'
+
+    filename = os.path.basename(filepath).replace('.pdf', '')    
+    
+    out_dir = os.path.dirname(outpath)    
+    images_path = os.path.join(out_dir, filename + ' Images')
+    if not os.path.exists(images_path):
+        os.mkdir(images_path)
+
+    get_images(filepath, images_path, fp, lp, fmt = img_fmt)    
+    out_file = run_tesseract(images_path, outpath, fmt = ['txt', 'pdf'], image_format = img_fmt)
+
+    print('\n.............Extracted text from the PDF')
+    return out_file
+
+
 def copy_file_from_bucket(PDF_file_path_gcp):
     cmd = "gsutil cp "+ PDF_file_path_gcp +" \""+ base_data_folder+"\""
 #    print(cmd)
@@ -47,6 +118,7 @@ def remove_from_bucket(file_path):
     os.system("gsutil rm "+file_path)
 #    except:
 #        print("Could not delete from bucket")
+
 
 def save_ocr_text(PDF_file_path_gcp):
     pdf_name = os.path.basename(PDF_file_path_gcp)
@@ -87,9 +159,17 @@ if __name__ == "__main__":
                 if PDF_file_path_gcp:
                     copy_file_from_bucket(PDF_file_path_gcp)
                     os.system("gcloud logging write ocr-app 'file copied from bucket' --severity=INFO")
-                    out_file_path = save_ocr_text(PDF_file_path_gcp)
+                    #out_file_path = save_ocr_text(PDF_file_path_gcp)
+                    pdf_name = os.path.basename(PDF_file_path_gcp)
+                    PDF_file_local_path = os.path.join(base_data_folder, pdf_name)
+
+                    OCR_func(PDF_file_local_path, PDF_file_local_path)
+
                     os.system("gcloud logging write ocr-app 'converted to text' --severity=INFO")
-                    upload_file_to_bucket(out_file_path, PDF_file_path_gcp.replace("/input/","/output/").replace(".pdf",".txt"))
+
+                    upload_file_to_bucket(PDF_file_local_path.replace(".pdf", ".pdf.pdf"), PDF_file_path_gcp.replace("/input/","/output/").replace(".pdf",".txt"))
+                    upload_file_to_bucket(PDF_file_local_path.replace(".pdf", ".pdf.txt"), PDF_file_path_gcp.replace("/input/","/output/").replace(".pdf",".txt"))
+
                     os.system("gcloud logging write ocr-app 'uploaded text to bucket' --severity=INFO")
                     remove_from_bucket(PDF_file_path_gcp)
                     os.system("gcloud logging write ocr-app 'pdf file deleted from bucket' --severity=INFO")
