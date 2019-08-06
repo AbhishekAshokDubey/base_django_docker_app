@@ -166,6 +166,9 @@ if __name__ == "__main__":
                     OCR_func(PDF_file_local_path, PDF_file_local_path)
 
                     os.system("gcloud logging write ocr-app 'converted to text' --severity=INFO")
+                    os.system("gcloud logging write ocr-app 'local path: "+PDF_file_local_path+"' --severity=INFO")
+                    os.system("gcloud logging write ocr-app 'local searchable pdf path: "+PDF_file_local_path.replace(".pdf", ".pdf.pdf") +"' --severity=INFO")
+                    os.system("gcloud logging write ocr-app 'GCP searchable pdf path: "+PDF_file_path_gcp.replace("/input/","/output/").replace(".pdf",".pdf.pdf")+"' --severity=INFO")
 
                     upload_file_to_bucket(PDF_file_local_path.replace(".pdf", ".pdf.pdf"), PDF_file_path_gcp.replace("/input/","/output/").replace(".pdf",".pdf.pdf"))
                     upload_file_to_bucket(PDF_file_local_path.replace(".pdf", ".pdf.txt"), PDF_file_path_gcp.replace("/input/","/output/").replace(".pdf",".pdf.txt"))
