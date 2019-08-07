@@ -8,13 +8,13 @@ import re
 import os
 import sys
 import pytesseract 
-from PIL import Image 
+from PIL import Image
 from sys import platform
 from pdf2image import convert_from_path 
 import subprocess
 import time
 import json
-
+import shutil
 
 cur_file_apth = os.path.dirname(os.path.abspath(__file__))
 base_data_folder = cur_file_apth.replace("pull_script","data")
@@ -38,7 +38,10 @@ import random
 def get_images(file_path, images_path, fp, lp, fmt = 'png'):
     print('Saving Images for file {} in folder {}'.format(os.path.basename(file_path), images_path))
     output_file = os.path.basename(file_path).replace('.pdf', '')
-    convert_from_path(file_path, dpi = 300, output_folder = images_path, output_file = output_file, first_page = fp, last_page = lp, fmt = 'png', thread_count= 4)    
+    print(file_path)
+    print(images_path)
+    print(output_file)
+    convert_from_path(file_path, dpi = 300, output_folder = images_path)
     return True
 
 def randomString(stringLength = 8):
@@ -52,7 +55,7 @@ def parse_input(image_path):
         return 't'
     return 'd'
 
-def run_tesseract(image_path, out_file, fmt = ['txt'], image_format = 'png'):
+def run_tesseract(image_path, out_file, fmt = ['txt'], image_format = 'ppm'):
     input_type = parse_input(image_path)
     if not input_type == 't':
         if input_type == 'd':
@@ -68,18 +71,25 @@ def run_tesseract(image_path, out_file, fmt = ['txt'], image_format = 'png'):
         f.close()
         image_path = txtfile_path
     
-    print('\n\n')
+#    print('\n\n')
     tesseract_formats = ' '.join(fmt)
     cmd =  'tesseract "' + image_path + '" "' + out_file + '" ' + tesseract_formats
     print('Tesseract Command is: ',cmd, '\n\n')
     out_status = subprocess.call(cmd, shell = True)
-    print('\n\n%%%%%%%%%%%%%%%%%%%%%%%%%%%out%%%%%%%%%%%%%%%%%%%%%%%', out_status)
-    print('OCR Done')
+#    print('\n\n%%%%%%%%%%%%%%%%%%%%%%%%%%%out%%%%%%%%%%%%%%%%%%%%%%%', out_status)
+#    print('OCR Done')
     
     if not input_type == 't':
         os.remove(image_path)
     return out_status
 
+
+def cleanup_data_folder():
+    #folder = r"C:\Users\Adubey4\Desktop\ocr-app-scale\base_django_docker_app\data"
+    if os.path.exists(base_data_folder):
+        shutil.rmtree(base_data_folder)
+        time.sleep(1)
+        os.mkdir(base_data_folder)
 
 def OCR_func(filepath, outpath, fp = None, lp = None, fmt = ['txt', 'pdf', 'tsv']):
     img_fmt = 'png'
@@ -108,8 +118,8 @@ def upload_file_to_bucket(local_path, bucket_path):
 #    print(cmd)
     os.system(cmd)
 #    try:
-    os.remove(local_path)
-    os.remove(local_path.replace(".txt",".pdf"))
+#    os.remove(local_path)
+#    os.remove(local_path.replace(".txt",".pdf"))
 #    except:
 #        print("count not delete files")
 
@@ -166,13 +176,16 @@ if __name__ == "__main__":
                     OCR_func(PDF_file_local_path, PDF_file_local_path)
 
                     os.system("gcloud logging write ocr-app 'converted to text' --severity=INFO")
-                    os.system("gcloud logging write ocr-app 'local path: "+PDF_file_local_path+"' --severity=INFO")
-                    os.system("gcloud logging write ocr-app 'local searchable pdf path: "+PDF_file_local_path.replace(".pdf", ".pdf.pdf") +"' --severity=INFO")
-                    os.system("gcloud logging write ocr-app 'GCP searchable pdf path: "+PDF_file_path_gcp.replace("/input/","/output/").replace(".pdf",".pdf.pdf")+"' --severity=INFO")
+                    
+                    os.system("gcloud logging write ocr-app 'local path "+PDF_file_local_path+"' --severity=INFO")
+                    os.system("gcloud logging write ocr-app 'local searchable pdf path "+PDF_file_local_path.replace(".pdf", ".pdf.pdf") +"' --severity=INFO")
+                    os.system("gcloud logging write ocr-app 'GCP searchable pdf path "+PDF_file_path_gcp.replace("/input/","/output/").replace(".pdf",".pdf.pdf")+"' --severity=INFO")
 
                     upload_file_to_bucket(PDF_file_local_path.replace(".pdf", ".pdf.pdf"), PDF_file_path_gcp.replace("/input/","/output/").replace(".pdf",".pdf.pdf"))
                     upload_file_to_bucket(PDF_file_local_path.replace(".pdf", ".pdf.txt"), PDF_file_path_gcp.replace("/input/","/output/").replace(".pdf",".pdf.txt"))
-
+                    
+                    cleanup_data_folder()
+                    
                     os.system("gcloud logging write ocr-app 'uploaded text to bucket' --severity=INFO")
                     remove_from_bucket(PDF_file_path_gcp)
                     os.system("gcloud logging write ocr-app 'pdf file deleted from bucket' --severity=INFO")
@@ -188,5 +201,5 @@ if __name__ == "__main__":
 #            remove_from_bucket(PDF_file_path_gcp)
 ##            except:
 ##                print("Broke for: "+PDF_file_path_gcp)
-        time.sleep(10) # 2 second delay
+        time.sleep(2) # 2 second delay
         
