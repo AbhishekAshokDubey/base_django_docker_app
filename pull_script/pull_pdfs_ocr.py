@@ -41,7 +41,7 @@ def get_images(file_path, images_path, fp, lp, fmt = 'png'):
     print(file_path)
     print(images_path)
     print(output_file)
-    convert_from_path(file_path, dpi = 300, output_folder = images_path)
+    convert_from_path(file_path, dpi = 300, fmt = 'png', output_folder = images_path)
     return True
 
 def randomString(stringLength = 8):
@@ -76,7 +76,7 @@ def run_tesseract(image_path, out_file, fmt = ['txt'], image_format = 'ppm'):
     cmd =  'tesseract "' + image_path + '" "' + out_file + '" ' + tesseract_formats
     print('Tesseract Command is: ',cmd, '\n\n')
     out_status = subprocess.call(cmd, shell = True)
-#    print('\n\n%%%%%%%%%%%%%%%%%%%%%%%%%%%out%%%%%%%%%%%%%%%%%%%%%%%', out_status)
+    print('\n\n%%%%%%%%%%%%%%%%%%%%%%%%%%%out%%%%%%%%%%%%%%%%%%%%%%%', out_status)
 #    print('OCR Done')
     
     if not input_type == 't':
@@ -102,7 +102,8 @@ def OCR_func(filepath, outpath, fp = None, lp = None, fmt = ['txt', 'pdf', 'tsv'
         os.mkdir(images_path)
 
     get_images(filepath, images_path, fp, lp, fmt = img_fmt)    
-    out_file = run_tesseract(images_path, outpath, fmt = ['txt', 'pdf'], image_format = img_fmt)
+    print(os.listdir(images_path))
+    out_file = run_tesseract(images_path, outpath, fmt = ['pdf', 'txt'], image_format = img_fmt)
 
     print('\n.............Extracted text from the PDF')
     return out_file
@@ -174,7 +175,7 @@ if __name__ == "__main__":
                     PDF_file_local_path = os.path.join(base_data_folder, pdf_name)
 
                     OCR_func(PDF_file_local_path, PDF_file_local_path)
-
+                    print(os.listdir(base_data_folder))
                     os.system("gcloud logging write ocr-app 'converted to text' --severity=INFO")
                     
                     os.system("gcloud logging write ocr-app 'local path "+PDF_file_local_path+"' --severity=INFO")
